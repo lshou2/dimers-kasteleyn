@@ -25,7 +25,7 @@ from functions.kasteleyn_shapes import kasteleyn_shape, is_it_squareoctagon, \
 
 #%% Kasteleyn matrix functions
 
-def kinv_lu_sparse(n, kmatsparse, shape_coord, string=[], squares=False,squarestart=1,\
+def kinv_lu_sparse(n, kmatsparse, shape_coord, string=None, squares=False,squarestart=1,\
                    pathlength='',  verbose=True, bwmatcoords=''):
     ''' 
     Returns the submatrix of the inverse Kasteleyn matrix K^{-1} corresponding
@@ -63,7 +63,7 @@ def kinv_lu_sparse(n, kmatsparse, shape_coord, string=[], squares=False,squarest
     ksize = np.shape(kmatsparse)[0]
     
     if len(bwmatcoords) == 0:
-        if string==[]:
+        if string is None:
             string = get_default_string(n, shape_coord, squares,\
                                         pathlength=pathlength, squarestart=squarestart)
             print('Using default string/path')
@@ -90,14 +90,14 @@ def kinv_lu_sparse(n, kmatsparse, shape_coord, string=[], squares=False,squarest
     return kinvsmall
 
 
-def shrink(n,shape_coord, k, kinv, string=[], squares=False, plot=False, \
+def shrink(n,shape_coord, k, kinv, string=None, squares=False, plot=False, \
            verbose=False, pathlength=''):
     '''
     Return submatrices of K and K^{-1} corresponding to dimers/vertices in 
     'string' (list of dimers in lattice coordinates)
     '''
     
-    if string==[]:
+    if string is None:
         string = get_default_string(n, shape_coord, squares, pathlength)
         print('Using default string/path')
         if verbose==True:
@@ -114,7 +114,7 @@ def shrink(n,shape_coord, k, kinv, string=[], squares=False, plot=False, \
     return k_small, kinv_small
 
 
-def shrinkone(n,shape_coord, k, string=[], squares=False, squarestart=1,\
+def shrinkone(n,shape_coord, k, string=None, squares=False, squarestart=1,\
               plot=False, bwmatcoords='',\
            verbose=False, pathlength=''):
     '''
@@ -123,7 +123,7 @@ def shrinkone(n,shape_coord, k, string=[], squares=False, squarestart=1,\
     '''
     
     if len(bwmatcoords) == 0:
-        if string==[]:
+        if string is None:
             if pathlength == '':
                 pathlength = n//2-1
             if is_it_squareoctagon(shape_coord) == True:
@@ -274,7 +274,7 @@ def ocurve(x, y):
             -1431*y**4+25812*x**2* y**2 -3402*x**2-3402*y**2 +729 
 
 def arcticcurve(x, y):
-    '''Artic circle'''
+    '''Arctic circle'''
     return x**2 + y**2 - 2
 
 def plot_ocurve(axs, istart, jstart, size, resolution=1000, \
@@ -432,7 +432,7 @@ def conditional_prob_plot(n, shape_coord, k, kinv, dimer0list, radius, \
                           title = '', axes=False, gapwidth=.2, edgewidth=10,\
                         colors2='coolwarm', firstonly=True, compare_infinite=False,\
                             colorbar=True, ocurve=False,\
-                    inset=False, inset_radius=5, insetedgewidth=10, pltaxes='',\
+                    inset=False, inset_radius=5, insetedgewidth=10, pltaxes=None,\
                         showplot=True,bdybox=True, makefigure=True, verbose=False):
     '''
     Plot conditional probabilities of edges.
@@ -460,7 +460,7 @@ def conditional_prob_plot(n, shape_coord, k, kinv, dimer0list, radius, \
             fig = plt.figure(figsize=(4,4))
         inf_prob_square = .25
     
-    ax = plt.subplot() if type(pltaxes)==str else pltaxes
+    ax = plt.subplot() if pltaxes is None else pltaxes
     
     if axes==False: # remove axis/labels
         ax.set_xticks([])
@@ -592,7 +592,7 @@ def conditional_prob_plot(n, shape_coord, k, kinv, dimer0list, radius, \
         
     # plot octal curve
     if ocurve == True:
-        # handles a lower y-cutoff (2* because the coordinates are stretched by 2 for the octaongs)
+        # handles a lower y-cutoff (2* because the coordinates are stretched by 2 for the octagons)
         lower_cutoff = 2 * min([edge[0][0] for edge in list_of_edges])
         if verbose:
             print(lower_cutoff)

@@ -49,8 +49,8 @@ def aztec_coord(n,i,j):
     '''
     Coordinate function for Aztec diamond (square lattice).
     '''
-    assert n%2 == 0, 'n must be even, receieved n=%i'%n
-    assert 0 <= i <= n-1, 'i must be between 0 and %i, receieved i=%i'%(n-1,i)
+    assert n%2 == 0, 'n must be even, received n=%i'%n
+    assert 0 <= i <= n-1, 'i must be between 0 and %i, received i=%i'%(n-1,i)
     
     matrixcoord = 0
     numvertexpairs = n//2 * (n//2 + 1)
@@ -61,7 +61,7 @@ def aztec_coord(n,i,j):
         
         # check j is in the diamond
         assert n//2-1-i <= j <= n//2+i, \
-            'In top half of diamond. For row %i, j must be between %i and %i, receieved j=%i'\
+            'In top half of diamond. For row %i, j must be between %i and %i, received j=%i'\
                 %(i, n//2-1-i,n//2+i,j)
         
         # the matrix coordinate for the first vertex in row i is \sum_{k=1}^i k = i(i+1)/2
@@ -142,8 +142,8 @@ def octagon_fortress_coord(n, i, j):
     '''
     Coordinate function for the square-octagon fortress
     '''
-    assert n%4 == 0, 'n must be a multiple of 4, receieved n=%i'%n
-    assert 0 <= i <= n-1, 'i must be between 0 and %i, receieved i=%i'%(n-1,i)
+    assert n%4 == 0, 'n must be a multiple of 4, received n=%i'%n
+    assert 0 <= i <= n-1, 'i must be between 0 and %i, received i=%i'%(n-1,i)
     
     matrixcoord = 0
     numvertexpairs = sum([6+2*i+4*(i//2) for i in range(n//2)])
@@ -155,7 +155,7 @@ def octagon_fortress_coord(n, i, j):
         # check j is in the diamond
         extrawidth = i + 2*(i//2)
         assert n - 3 - extrawidth <= j <= n + 2 + extrawidth, \
-            'In top half of diamond. For row %i, j must be between %i and %i, receieved j=%i'\
+            'In top half of diamond. For row %i, j must be between %i and %i, received j=%i'\
                 %(i, n-3-extrawidth-i,n+2+extrawidth,j)
         
         # the number of vertices in each row is 6 + i*(i+1) + 4*i//2
@@ -197,9 +197,9 @@ def octagon_fakefortress_coord(n, i, j):
     faces added along the boundaries. It is NOT the same as the square-octagon
     fortress.
     '''
-    assert n%2 == 0, 'n must be a multiple of 2, receieved n=%i'%n
-    assert 0 <= i <= n-1, 'i must be between 0 and %i, receieved i=%i'%(n-1,i)
-    #assert 0 <= j <= 2*n-1, 'j must be between 0 and %i, receieved j=%i'%(2*n-1,i)
+    assert n%2 == 0, 'n must be a multiple of 2, received n=%i'%n
+    assert 0 <= i <= n-1, 'i must be between 0 and %i, received i=%i'%(n-1,i)
+    #assert 0 <= j <= 2*n-1, 'j must be between 0 and %i, received j=%i'%(2*n-1,i)
     matrixcoord = 0
     numvertexpairs = sum([6+4*i for i in range(n//2)]) - 2 # -2 for no extra squares
     
@@ -210,7 +210,7 @@ def octagon_fakefortress_coord(n, i, j):
         # check j is in the diamond
         extrawidth = 2*i
         assert n - 3 - extrawidth <= j <= n + 2 + extrawidth, \
-            'In top half of diamond. For row %i, j must be between %i and %i, receieved j=%i'\
+            'In top half of diamond. For row %i, j must be between %i and %i, received j=%i'\
                 %(i, n-3-extrawidth-i,n+2+extrawidth,j)
         
         # the number of vertices in each row is 6 + i*(i+1) + 2*i
@@ -531,7 +531,7 @@ def get_octdiag_string(n, shape_coord, pathlength=10, flip=False):
 
 #%% Plot shapes and paths
 
-def plot_shape(n, shape_coord, string=[],numbering=False, weights=False, \
+def plot_shape(n, shape_coord, string=None,numbering=False, weights=False, \
                kmat='', axes=True, pt=16, vertices=True, edgecolor='k',\
                vertex_list=[], vsize=60, del_vertex_edges=True, vlist_loop=False, \
                vlist_color='r', vedge_thickness=3):
@@ -643,7 +643,7 @@ def plot_shape(n, shape_coord, string=[],numbering=False, weights=False, \
         plt.scatter(wpts_x,wpts_y,color='lightgray',s=dotsize)
 
     # draw the edges indicated in 'string'
-    if len(string) > 0:
+    if string is not None:
         string_segments = []
         for dimer in string:
             v1, v2 = dimer
@@ -681,7 +681,7 @@ def plot_shape(n, shape_coord, string=[],numbering=False, weights=False, \
     plt.show()
     return 0
 
-def plot_shape_octagons(n, shape_coord, strings=[],numbering=False, weights=False, \
+def plot_shape_octagons(n, shape_coord, strings=None,numbering=False, weights=False, \
                kmat='', axes=False, pt=20, colorlist=['blue','orange','purple'],\
             labels=['path1', 'path2', 'path3'], savename='',paths3=False,\
                 vertices=True, edgecolor='black', \
@@ -887,7 +887,7 @@ def plot_shape_octagons(n, shape_coord, strings=[],numbering=False, weights=Fals
         colorlist = ['blue', 'tab:orange', 'tab:green']# skip square 2 color
     
     # color edges of string
-    if len(strings) > 0:
+    if strings is not None:
         legendlines = []
         
         if not isinstance(strings[0][0],list):

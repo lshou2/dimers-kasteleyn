@@ -8,7 +8,7 @@ Fraction-free LU methods
 import numpy as np
 import scipy.sparse as sps
 import time
-import multiprocessing as mup
+import multiprocessing as mp_
 import multiprocessing.pool
 import os
 from os import cpu_count
@@ -23,6 +23,8 @@ from functions.kasteleyn_shapes import get_default_string, get_dimerlist_matrixc
     
 from functions.kasteleyn_inverse import shrinkone
 
+# Note: The fraction-free methods here could be sped up by using the 
+# gmpy2 module (not yet implemented here)
 
 #%% Fraction-free LU (FFLU)
 
@@ -43,7 +45,7 @@ def lu_sparse(mat_sparse, verbose=True):
     to allow for arbitrary precision integers.
     '''
     if not isinstance(mat_sparse, sps.lil_matrix):
-        raise ValueError("requires il_matrix format -- use .tolil() first")    
+        raise ValueError("requires lil_matrix format -- use .tolil() first")    
     
     # make the matrix B a python list of lists so it can hold python (non-numpy) ints
     B = mat_sparse.toarray().tolist()
@@ -75,8 +77,8 @@ def lu_sparse(mat_sparse, verbose=True):
         pk_m1 = p[k-1]
         
         if B[k][k] == 0: # would want to swap with bottom-most row with nonzero pivot
-            print('Warning: row swapping not implemented')
-            return 1
+            #print('Warning: row swapping not implemented')
+            raise NotImplementedError('row swapping not implemented yet')
         
         bk = B[k]
         # update p
@@ -181,13 +183,13 @@ def back_sub(lu, r):
     return s, det
 
 
-def kinv_ff(n, kmat, shape_coord, string=[], squares=False,squarestart=1,\
+def kinv_ff(n, kmat, shape_coord, string=None, squares=False,squarestart=1,\
                    pathlength='',  bwmatcoords='',\
                        lu='', save=True, nametag='fortress', divdps=200):
     '''
     Return fraction-free kinvsmall, single thread.
     '''
-    if len(string)==0:
+    if string is None:
         string = get_default_string(n, shape_coord, squares,pathlength=pathlength, \
                                     squarestart=squarestart)
         
@@ -211,9 +213,9 @@ def kinv_ff(n, kmat, shape_coord, string=[], squares=False,squarestart=1,\
         soln, det = back_sub(lu, rvec)
         if save:
             np.save('sqoct_%s_n%i_fflu/lusoln_matsize%i_bindex%i_s.npy'\
-                    %(nametag,n,ksize, bcoords[index]), soln[0])
+                    %(nametag,n,ksize, bcoords[index]), soln)
             np.save('sqoct_%s_n%i_fflu/lusoln_matsize%i_bindex%i_det.npy'\
-                    %(nametag,n,ksize, bcoords[index]), soln[1])
+                    %(nametag,n,ksize, bcoords[index]), det)
         
         solnsmall = [soln[w] for w in wcoords]
         for j in range(submatsize):
@@ -238,7 +240,7 @@ def det_sparse(mat_sparse, verbose=True):
     row swapping implemented to handle zero pivots.
     '''
     if not isinstance(mat_sparse, sps.lil_matrix):
-        raise ValueError("requires il_matrix format -- use .tolil() first")    
+        raise ValueError("requires lil_matrix format -- use .tolil() first")    
     
     # make the matrix B a python list of lists so it can hold python (non-numpy) ints
     B = mat_sparse.toarray().tolist()
@@ -372,9 +374,9 @@ def det_sparse(mat_sparse, verbose=True):
 
     return sign * pn_m1
 
-#%% FFLU mutithreading
+#%% FFLU multithreading
 
-def kinv_mup_helper(bindex, lu, wcoords, n=100, nametag='rect', divdps=200):
+def kinv_mp_helper(bindex, lu, wcoords, n=100, nametag='rect', divdps=200):
     '''
     Used for multithreading
     
@@ -396,7 +398,7 @@ def kinv_mup_helper(bindex, lu, wcoords, n=100, nametag='rect', divdps=200):
     
     return np.array([fdiv(soln[0][i],soln[1]) for i in wcoords])
 
-def kinv_ff_mup(n, kmat, shape_coord, string=[], squares=False,squarestart=1,\
+def kinv_ff_mp(n, kmat, shape_coord, string=None, squares=False,squarestart=1,\
                    pathlength='',  bwmatcoords='',\
                        numthreads=0, nametag='fortress', dps=200):
     '''
@@ -416,7 +418,7 @@ def kinv_ff_mup(n, kmat, shape_coord, string=[], squares=False,squarestart=1,\
         os.makedirs(saveloc)
         print('Created folder %s'%saveloc)
     
-    if len(string) == 0:
+    if string is None:
         string = get_default_string(n, shape_coord, squares,pathlength=pathlength, \
                                 squarestart=squarestart)
         
@@ -431,46 +433,19 @@ def kinv_ff_mup(n, kmat, shape_coord, string=[], squares=False,squarestart=1,\
     submatsize = len(bcoords)
     
     if numthreads == 0:
-        num_workers = int(0.5 * cpu_count())
+        num_workers = max(1, int(0.5 * cpu_count()))
     else:
         num_workers = numthreads
     print('using %i threads to calculate kinvsmall from LU'%num_workers)
 
     t2 = time.time()
     bindex = [bcoords[index] for index in range(submatsize)]
-    with mup.Pool(num_workers) as p:
+    with mp_.Pool(num_workers) as p:
         # note: requires too much RAM to repeat lu many times!
-        kinvsmall = p.starmap(kinv_mup_helper, \
+        kinvsmall = p.starmap(kinv_mp_helper, \
                               zip(bindex, itertools.repeat(lu), \
                                   itertools.repeat(wcoords), itertools.repeat(n),\
                                       itertools.repeat(nametag)))
-    kinvsmall = np.transpose(kinvsmall)
-    t3 = time.time()
-    print('Computed kinvsmall from LU decomp. in %.2f seconds'%(t3-t2))
-    return kinvsmall
-
-def kinvs_from_lu(lu, bcoords, wcoords, numthreads=0, dps=200):
-    '''
-    Second half of kinv_ff_mup, if we saved the LU decomposition but didn't 
-    run the rest.
-    '''
-    mp.mp.dps = dps
-    
-    if numthreads == 0:
-        num_workers = int(0.5 * cpu_count())
-    else:
-        num_workers = numthreads
-    print('using %i threads to calculate kinvsmall from LU'%num_workers)
-
-    submatsize = len(bcoords)
-
-    t2 = time.time()
-    bindex = [bcoords[index] for index in range(submatsize)]
-    
-    with mup.Pool(num_workers) as p:
-        # note: requires too much RAM to repeat lu many times!
-        kinvsmall = p.starmap(kinv_mup_helper, \
-                              zip(bindex, itertools.repeat(lu), itertools.repeat(wcoords)))
     kinvsmall = np.transpose(kinvsmall)
     t3 = time.time()
     print('Computed kinvsmall from LU decomp. in %.2f seconds'%(t3-t2))
@@ -554,7 +529,7 @@ def mp_save_visons(n, shape_coord, nametag,verbose=True,dps=50):
     
     must be in filepath ./sqoct_'nametag'_n'n'_fflu_'pathlabel' where 
     'pathlabel' is 'octpath', 'squarepath', or 'diagpath'
-    For exapmle, ./sqoct_fortress_n200_fflu_octpath/
+    For example, ./sqoct_fortress_n200_fflu_octpath/
     
     if verbose=True, prints large condition numbers of vison determinant matrix
     '''
@@ -592,12 +567,12 @@ def mp_save_visons(n, shape_coord, nametag,verbose=True,dps=50):
 
 def mp_save_dimer(n, shape_coord, nametag,verbose=True,dps=50):
     '''
-    Calculate and save vison correlators along the 4 paths
+    Calculate and save dimer-dimer correlators along the 4 paths
     (octpath, squarepath 1 and 2, diagpath), using mpmath
     
     must be in filepath ./sqoct_'nametag'_n'n'_fflu_'pathlabel' where 
     'pathlabel' is 'octpath', 'squarepath', or 'diagpath'
-    For exapmle, ./sqoct_fortress_n200_fflu_octpath/
+    For example, ./sqoct_fortress_n200_fflu_octpath/
     
     if verbose=True, prints large condition numbers of vison determinant matrix
     '''
@@ -653,7 +628,7 @@ def top_quadrant_vertices(n, shape_coord):
                 pass
     return vlist
 
-def kinv_mup_helper2(bindex, lu, n=140,nametag='fortress',lattice='sqoct'):
+def kinv_mp_helper2(bindex, lu, n=140,nametag='fortress',lattice='sqoct'):
     '''
     Perform forward and back substitution to solve LU x = e_{bindex}
     Saves the intermediate steps (before float division).
@@ -683,7 +658,7 @@ def solve_kinvsfull_from_lu(n, shape_coord, lu, numthreads=2, nametag='fortress'
     Requires a folder like 'sqoct_nametag_n100_fflu'
     '''
     if numthreads == 0:
-        num_workers = int(0.5 * cpu_count())
+        num_workers = max(1, int(0.5 * cpu_count()))
     else:
         num_workers = numthreads
     print('will use %i threads to calculate kinvsmall from LU'%num_workers)
@@ -693,9 +668,9 @@ def solve_kinvsfull_from_lu(n, shape_coord, lu, numthreads=2, nametag='fortress'
     print('Got list of top right quadrant vertices, there are %i'%len(vlist))
 
     t2 = time.time()
-    with mup.Pool(num_workers) as p:
+    with mp_.Pool(num_workers) as p:
         # requires too much RAM to repeat lu many times!
-        p.starmap(kinv_mup_helper2, zip(bindices, itertools.repeat(lu)))
+        p.starmap(kinv_mp_helper2, zip(bindices, itertools.repeat(lu)))
 
     t3 = time.time()
     print('Saved K^{-1} columns from LU decomp. in %.2f seconds'%(t3-t2))
@@ -730,9 +705,6 @@ def kinvs_full_from_lusol(n, shape_coord, filepath, divdps=2000, dps=50):
                     mp.mp.dps = divdps
                     kinv[:,bindex] = [float(fdiv(soln[y], det)) for y in range(matsize)]
                     
-                    end = fdiv(soln[j],det)
-                    if end > 10**10:
-                        print(bindex, end)
             except AssertionError:
                 pass
 

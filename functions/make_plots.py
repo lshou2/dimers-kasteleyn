@@ -344,7 +344,7 @@ def plot_sqoct_octpath_mc(ival, pt=20,save=False,cverbose=False,\
 
 
 
-#%% square-octagon fotrtress
+#%% square-octagon fortress
 
 def plot_sqoctfortress_dimer_paths_fflu(irange=range(1,3),pt=18,save=False, \
                             truncate=100,ylabel=True,title='',mwidths=[],\
